@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Base de Conocimiento con IA</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #ffffff; --bg2: #f5f5f4; --bg3: #eeede9;
+    --text: #1a1a18; --text2: #6b6b67; --text3: #9b9b97;
+    --border: rgba(0,0,0,0.1); --border2: rgba(0,0,0,0.2);
+    --radius: 8px; --radius-lg: 12px;
+    --accent: #185FA5; --danger: #A32D2D; --success: #1D9E75;
+  }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; background: var(--bg3); display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 20px; }
+  .app { display: flex; width: 100%; max-width: 1280px; height: 700px; background: var(--bg); border-radius: var(--radius-lg); border: 1px solid var(--border); overflow: hidden; box-shadow: 0 4px 24px rgba(0,0,0,0.08); }
+
+  /* SIDEBAR */
+  .sidebar { width: 220px; min-width: 220px; background: var(--bg2); border-right: 0.5px solid var(--border); display: flex; flex-direction: column; }
+  .logo { padding: 16px; border-bottom: 0.5px solid var(--border); }
+  .logo h1 { font-size: 13px; font-weight: 600; color: var(--text); }
+  .logo p { font-size: 11px; color: var(--text3); margin-top: 2px; }
+  .nav { padding: 8px; flex: 1; overflow-y: auto; }
+  .nav-sec { font-size: 10px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.07em; padding: 8px 8px 4px; }
+  .ni { display: flex; align-items: center; gap: 8px; padding: 7px 10px; border-radius: var(--radius); cursor: pointer; font-size: 13px; color: var(--text2); margin-bottom: 2px; transition: all 0.12s; user-select: none; }
+  .ni:hover { background: var(--bg); color: var(--text); }
+  .ni.act { background: var(--bg); color: var(--text); font-weight: 500; }
+  .badge { margin-left: auto; font-size: 10px; background: var(--border); padding: 1px 6px; border-radius: 10px; color: var(--text3); }
+
+  /* MAIN */
+  .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
+  .topbar { padding: 10px 16px; border-bottom: 0.5px solid var(--border); display: flex; align-items: center; gap: 10px; }
+  .sw { flex: 1; position: relative; }
+  .sw input { width: 100%; padding: 7px 10px 7px 32px; font-size: 13px; border: 0.5px solid var(--border2); border-radius: var(--radius); background: var(--bg2); color: var(--text); outline: none; }
+  .sw input:focus { border-color: var(--accent); }
+  .si { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--text3); font-size: 13px; pointer-events: none; }
+  .btn { padding: 7px 12px; font-size: 12px; font-weight: 500; border: 0.5px solid var(--border2); border-radius: var(--radius); background: var(--bg); color: var(--text); cursor: pointer; white-space: nowrap; transition: all 0.12s; }
+  .btn:hover { background: var(--bg2); }
+  .btn.pri { background: var(--text); color: var(--bg); border-color: transparent; }
+  .btn.pri:hover { opacity: 0.82; }
+  .btn.info { color: var(--accent); }
+  .btn.danger { color: var(--danger); }
+  .content { flex: 1; overflow-y: auto; padding: 16px; }
+
+  /* CARDS */
+  .card { border: 0.5px solid var(--border); border-radius: var(--radius-lg); padding: 13px 15px; margin-bottom: 10px; cursor: pointer; background: var(--bg); transition: border-color 0.12s; }
+  .card:hover { border-color: var(--border2); }
+  .cmeta { margin-bottom: 5px; }
+  .tag { display: inline-block; font-size: 10px; padding: 2px 8px; border-radius: 10px; font-weight: 500; }
+  .tag.tech { background: #E6F1FB; color: #185FA5; }
+  .tag.process { background: #EAF3DE; color: #3B6D11; }
+  .tag.hr { background: #FAEEDA; color: #854F0B; }
+  .tag.product { background: #EEEDFE; color: #3C3489; }
+  .ctitle { font-size: 14px; font-weight: 500; color: var(--text); margin-bottom: 3px; }
+  .cex { font-size: 12px; color: var(--text2); line-height: 1.5; }
+  .cfooter { display: flex; gap: 14px; margin-top: 8px; font-size: 11px; color: var(--text3); }
+  .empty { text-align: center; padding: 60px 20px; color: var(--text3); font-size: 13px; line-height: 2; }
+
+  /* DETAIL */
+  .dtitle { font-size: 20px; font-weight: 600; color: var(--text); margin: 8px 0; line-height: 1.3; }
+  .dmeta { display: flex; gap: 14px; font-size: 12px; color: var(--text3); margin-bottom: 16px; }
+  .hr { border: none; border-top: 0.5px solid var(--border); margin: 16px 0; }
+  .dbody { font-size: 14px; color: var(--text2); line-height: 1.8; }
+  .dbody h3 { font-size: 14px; font-weight: 600; color: var(--text); margin: 16px 0 7px; }
+  .dbody p { margin-bottom: 10px; }
+  .dbody ul { padding-left: 20px; margin-bottom: 10px; }
+  .dbody li { margin-bottom: 5px; }
+  .acts { display: flex; gap: 8px; }
+
+  /* EDITOR */
+  .ed-title { width: 100%; padding: 9px 0; font-size: 17px; font-weight: 500; border: none; border-bottom: 0.5px solid var(--border); background: transparent; color: var(--text); outline: none; margin-bottom: 12px; }
+  .ed-meta { display: flex; gap: 8px; margin-bottom: 12px; }
+  .ed-meta select, .ed-meta input { padding: 6px 10px; font-size: 12px; border: 0.5px solid var(--border2); border-radius: var(--radius); background: var(--bg2); color: var(--text); outline: none; }
+  .ed-meta input { flex: 1; }
+  .ed-body { width: 100%; padding: 12px; font-size: 13px; line-height: 1.7; border: 0.5px solid var(--border2); border-radius: var(--radius); background: var(--bg2); color: var(--text); resize: vertical; min-height: 290px; font-family: inherit; outline: none; }
+  .ed-body:focus, .ed-meta select:focus, .ed-meta input:focus { border-color: var(--accent); }
+  .ed-acts { display: flex; gap: 8px; margin-top: 12px; }
+
+  /* STATS */
+  .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 16px; }
+  .stat { background: var(--bg2); border-radius: var(--radius); padding: 14px; }
+  .stat-lbl { font-size: 11px; color: var(--text3); margin-bottom: 4px; }
+  .stat-val { font-size: 24px; font-weight: 600; color: var(--text); }
+
+  /* AI PANEL */
+  .ai-panel { width: 300px; min-width: 300px; border-left: 0.5px solid var(--border); display: flex; flex-direction: column; background: var(--bg); }
+  .ai-hd { padding: 13px 16px; border-bottom: 0.5px solid var(--border); display: flex; align-items: center; gap: 8px; }
+  .ai-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--success); }
+  .ai-hd span { font-size: 13px; font-weight: 500; color: var(--text); }
+  .ai-hd small { margin-left: auto; font-size: 10px; color: var(--text3); }
+  .ai-msgs { flex: 1; overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 10px; }
+  .msg { max-width: 92%; }
+  .msg.u { align-self: flex-end; }
+  .msg.a { align-self: flex-start; }
+  .bubble { padding: 9px 12px; border-radius: var(--radius-lg); font-size: 12px; line-height: 1.6; }
+  .msg.u .bubble { background: var(--text); color: var(--bg); border-bottom-right-radius: 3px; }
+  .msg.a .bubble { background: var(--bg2); color: var(--text); border: 0.5px solid var(--border); border-bottom-left-radius: 3px; }
+  .mtime { font-size: 10px; color: var(--text3); margin-top: 3px; text-align: right; }
+  .msg.a .mtime { text-align: left; }
+  .ai-in { padding: 12px; border-top: 0.5px solid var(--border); display: flex; gap: 8px; }
+  .ai-in textarea { flex: 1; padding: 8px 10px; font-size: 12px; border: 0.5px solid var(--border2); border-radius: var(--radius); background: var(--bg2); color: var(--text); resize: none; height: 58px; font-family: inherit; outline: none; }
+  .ai-in textarea:focus { border-color: var(--accent); }
+  .ai-in button { padding: 8px 12px; background: var(--text); color: var(--bg); border: none; border-radius: var(--radius); cursor: pointer; font-size: 14px; align-self: flex-end; transition: opacity 0.12s; }
+  .ai-in button:hover { opacity: 0.82; }
+  .ai-in button:disabled { opacity: 0.35; cursor: not-allowed; }
+  .dots span { display: inline-block; width: 5px; height: 5px; border-radius: 50%; background: var(--text3); margin: 0 2px; animation: dt 1.2s infinite; }
+  .dots span:nth-child(2) { animation-delay: 0.2s; }
+  .dots span:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes dt { 0%,80%,100%{transform:scale(0.6);opacity:0.4}40%{transform:scale(1);opacity:1} }
+
+  /* TOAST */
+  .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: var(--text); color: var(--bg); padding: 10px 20px; border-radius: var(--radius); font-size: 13px; opacity: 0; transition: opacity 0.3s; pointer-events: none; z-index: 999; }
+  .toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <div class="logo">
+      <h1>📚 Base de Conocimiento</h1>
+      <p>con IA integrada · Claude Sonnet</p>
+    </div>
+    <div class="nav">
+      <div class="nav-sec">Principal</div>
+      <div class="ni act" id="n-articles" onclick="sv('articles')">◻ Todos los artículos <span class="badge" id="c-all">0</span></div>
+      <div class="ni" id="n-new" onclick="sv('new')">＋ Nuevo artículo</div>
+      <div class="nav-sec">Categorías</div>
+      <div class="ni" id="n-tech" onclick="fc('tech')">⬡ Tecnología <span class="badge" id="c-tech">0</span></div>
+      <div class="ni" id="n-process" onclick="fc('process')">⬡ Procesos <span class="badge" id="c-process">0</span></div>
+      <div class="ni" id="n-hr" onclick="fc('hr')">⬡ RRHH <span class="badge" id="c-hr">0</span></div>
+      <div class="ni" id="n-product" onclick="fc('product')">⬡ Producto <span class="badge" id="c-product">0</span></div>
+      <div class="nav-sec">Sistema</div>
+      <div class="ni" id="n-stats" onclick="sv('stats')">◈ Estadísticas</div>
+    </div>
+  </div>
+
+  <!-- MAIN -->
+  <div class="main">
+    <div class="topbar">
+      <div class="sw">
+        <span class="si">⌕</span>
+        <input type="text" id="srch" placeholder="Buscar en la base de conocimiento..." oninput="os(this.value)">
+      </div>
+      <button class="btn pri" onclick="sv('new')">+ Nuevo</button>
+    </div>
+    <div class="content" id="mc"></div>
+  </div>
+
+  <!-- AI PANEL -->
+  <div class="ai-panel">
+    <div class="ai-hd">
+      <div class="ai-dot"></div>
+      <span>Asistente IA</span>
+      <small>Claude Sonnet 4</small>
+    </div>
+    <div class="ai-msgs" id="aimsg">
+      <div class="msg a">
+        <div class="bubble">¡Hola! Soy tu asistente de conocimiento con IA. Puedo:<br><br>• Responder preguntas basándome en los artículos<br>• Resumir y analizar contenido<br>• Ayudarte a redactar nuevos artículos<br><br>¿En qué te ayudo?</div>
+        <div class="mtime">Ahora</div>
+      </div>
+    </div>
+    <div class="ai-in">
+      <textarea id="aiinp" placeholder="Pregunta algo sobre la base de conocimiento..." onkeydown="aik(event)"></textarea>
+      <button id="aisend" onclick="sendAI()">↑</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+var CATS = {tech:'Tecnología', process:'Procesos', hr:'RRHH', product:'Producto'};
+var arts = [
+  {id:1, title:"Guía de onboarding para nuevos empleados", cat:"hr", author:"Recursos Humanos", date:"2025-03-15",
+   content:"<h3>Bienvenida</h3><p>Este artículo describe el proceso de incorporación para todos los nuevos empleados de la empresa. Es fundamental seguir estos pasos para garantizar una integración exitosa.</p><h3>Semana 1: Orientación</h3><p>Durante la primera semana el nuevo empleado debe completar la documentación de contratación, conocer al equipo y asistir a las sesiones de inducción corporativa.</p><ul><li>Firma de contrato y documentación legal</li><li>Configuración de herramientas (email, Slack, Jira)</li><li>Reunión con el manager directo</li><li>Tour por las instalaciones</li></ul><h3>Semana 2-4: Integración</h3><p>El nuevo colaborador comenzará a involucrarse en proyectos reales bajo supervisión, con check-ins diarios durante este período.</p>",
+   excerpt:"Proceso completo de incorporación para nuevos colaboradores, desde el primer día hasta el fin del período de prueba."},
+  {id:2, title:"Arquitectura del sistema de microservicios", cat:"tech", author:"Equipo de Ingeniería", date:"2025-03-28",
+   content:"<h3>Visión general</h3><p>Nuestra plataforma está construida sobre una arquitectura de microservicios que permite escalar cada componente de forma independiente y desplegar actualizaciones sin afectar el sistema completo.</p><h3>Servicios principales</h3><ul><li><strong>Auth Service</strong>: Gestión de autenticación y autorización</li><li><strong>API Gateway</strong>: Punto de entrada único para todos los clientes</li><li><strong>User Service</strong>: Gestión de perfiles y preferencias</li><li><strong>Notification Service</strong>: Emails, SMS y push notifications</li></ul><h3>Comunicación entre servicios</h3><p>Los servicios se comunican principalmente a través de eventos asíncronos usando Apache Kafka. Para comunicación síncrona crítica se usa gRPC.</p>",
+   excerpt:"Documentación técnica de la arquitectura de microservicios, patrones de comunicación y principios de diseño del sistema."},
+  {id:3, title:"Proceso de aprobación de presupuestos", cat:"process", author:"Finanzas", date:"2025-02-10",
+   content:"<h3>Alcance</h3><p>Este procedimiento aplica a todas las solicitudes de gasto que superen los $500 USD y requieran aprobación formal antes de ser ejecutadas.</p><h3>Flujo de aprobación</h3><ul><li>$500 - $2,000: Aprobación del manager directo</li><li>$2,001 - $10,000: Aprobación del Director de área</li><li>$10,001 - $50,000: Aprobación del CFO</li><li>Más de $50,000: Aprobación del CEO y Board</li></ul><h3>Documentación requerida</h3><p>Toda solicitud debe incluir descripción del gasto, justificación de negocio, cotizaciones (mínimo 3 para montos sobre $5,000) y timeline de ejecución.</p>",
+   excerpt:"Procedimiento estándar para la aprobación de gastos, incluyendo montos límite, responsables y documentación requerida."},
+  {id:4, title:"Roadmap del producto Q2 2025", cat:"product", author:"Product Management", date:"2025-04-01",
+   content:"<h3>Objetivos del trimestre</h3><p>Para Q2 2025 el foco principal es mejorar la retención de usuarios en los primeros 30 días y aumentar el NPS de 42 a 55 puntos.</p><h3>Features confirmadas</h3><ul><li>Rediseño del flujo de onboarding (mayo)</li><li>Analytics avanzados para clientes Enterprise (junio)</li><li>Integración nativa con Salesforce (junio)</li><li>App móvil v2.0 con modo offline (julio)</li></ul><h3>Métricas de éxito</h3><p>El éxito del trimestre se medirá por: tasa de activación D7 mayor al 60%, churn mensual menor al 3% y revenue expansion del 15%.</p>",
+   excerpt:"Plan de producto para Q2 2025: features prioritarias, métricas de éxito y fechas estimadas de entrega."}
+];
+
+var view='articles', sel=null, catFil=null, srchQ='', aiLoading=false;
+
+function toast(msg) {
+  var t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');
+  setTimeout(function(){t.classList.remove('show');},2500);
+}
+
+function uc() {
+  document.getElementById('c-all').textContent = arts.length;
+  ['tech','process','hr','product'].forEach(function(c) {
+    var el=document.getElementById('c-'+c);
+    if(el) el.textContent=arts.filter(function(a){return a.cat===c;}).length;
+  });
+}
+
+function fl() {
+  var l=arts.slice();
+  if(catFil) l=l.filter(function(a){return a.cat===catFil;});
+  if(srchQ.trim()){var q=srchQ.toLowerCase();l=l.filter(function(a){return(a.title+' '+a.excerpt+' '+a.content).toLowerCase().includes(q);});}
+  return l;
+}
+
+function sv(v) {view=v;catFil=null;sel=null;na('n-'+v);render();}
+function fc(c) {view='articles';catFil=c;sel=null;na('n-'+c);render();}
+function os(v) {srchQ=v;view='articles';catFil=null;na('n-articles');render();}
+function na(id) {document.querySelectorAll('.ni').forEach(function(e){e.classList.remove('act');});var el=document.getElementById(id);if(el)el.classList.add('act');}
+function oa(id) {sel=arts.find(function(a){return a.id===id;});view='detail';render();}
+function ea(id) {sel=arts.find(function(a){return a.id===id;});view='edit';render();}
+function da(id) {if(!confirm('¿Eliminar este artículo?'))return;arts=arts.filter(function(a){return a.id!==id;});uc();sv('articles');toast('Artículo eliminado');}
+
+function render() {
+  var mc=document.getElementById('mc');
+  if(view==='articles') rList(mc);
+  else if(view==='detail') rDetail(mc);
+  else if(view==='new'||view==='edit') rEditor(mc);
+  else if(view==='stats') rStats(mc);
+}
+
+function rList(mc) {
+  var l=fl(),h='';
+  if(catFil) h+='<p style="font-size:12px;color:var(--text3);margin-bottom:10px;">Filtrando por: <b>'+CATS[catFil]+'</b> &nbsp;<a href="#" onclick="sv(\'articles\');return false;" style="color:var(--accent);">limpiar</a></p>';
+  if(srchQ) h+='<p style="font-size:12px;color:var(--text3);margin-bottom:10px;">'+l.length+' resultado(s) para "<b>'+srchQ+'</b>"</p>';
+  if(!l.length){h+='<div class="empty">No se encontraron artículos.<br><button class="btn" onclick="sv(\'new\')" style="margin-top:12px;">+ Crear el primero</button></div>';}
+  else l.forEach(function(a){h+='<div class="card" onclick="oa('+a.id+')"><div class="cmeta"><span class="tag '+a.cat+'">'+CATS[a.cat]+'</span></div><div class="ctitle">'+a.title+'</div><div class="cex">'+a.excerpt+'</div><div class="cfooter"><span>✎ '+a.author+'</span><span>◷ '+a.date+'</span></div></div>';});
+  mc.innerHTML=h;
+}
+
+function rDetail(mc) {
+  var a=sel;if(!a){sv('articles');return;}
+  mc.innerHTML='<button class="btn" onclick="sv(\'articles\')" style="margin-bottom:14px;">← Volver</button>'
+    +'<div style="margin-bottom:6px;"><span class="tag '+a.cat+'">'+CATS[a.cat]+'</span></div>'
+    +'<div class="dtitle">'+a.title+'</div>'
+    +'<div class="dmeta"><span>✎ '+a.author+'</span><span>◷ '+a.date+'</span></div>'
+    +'<hr class="hr"><div class="dbody">'+a.content+'</div><hr class="hr">'
+    +'<div class="acts">'
+    +'<button class="btn" onclick="ea('+a.id+')">✎ Editar</button>'
+    +'<button class="btn info" onclick="askAbout('+a.id+')">✦ Preguntar a la IA</button>'
+    +'<button class="btn info" onclick="summarize('+a.id+')">≡ Resumir</button>'
+    +'<button class="btn danger" onclick="da('+a.id+')" style="margin-left:auto;">Eliminar</button>'
+    +'</div>';
+}
+
+function rEditor(mc) {
+  var a=sel, isE=view==='edit'&&!!a;
+  mc.innerHTML='<p style="font-size:12px;color:var(--text3);margin-bottom:12px;">'+(isE?'Editando artículo':'Nuevo artículo')+'</p>'
+    +'<input class="ed-title" id="edt" type="text" placeholder="Título del artículo..." value="'+(isE?a.title:'')+'">'
+    +'<div class="ed-meta">'
+    +'<select id="edc">'
+    +'<option value="tech"'+(isE&&a.cat==='tech'?' selected':'')+'>Tecnología</option>'
+    +'<option value="process"'+(isE&&a.cat==='process'?' selected':'')+'>Procesos</option>'
+    +'<option value="hr"'+(isE&&a.cat==='hr'?' selected':'')+'>RRHH</option>'
+    +'<option value="product"'+(isE&&a.cat==='product'?' selected':'')+'>Producto</option>'
+    +'</select>'
+    +'<input id="eda" type="text" placeholder="Autor" value="'+(isE?a.author:'')+'">'
+    +'</div>'
+    +'<textarea class="ed-body" id="edb" placeholder="Escribe el contenido aquí. Puedes usar HTML básico: &lt;h3&gt;, &lt;p&gt;, &lt;ul&gt;, &lt;li&gt;, &lt;strong&gt;...">'+(isE?a.content:'')+'</textarea>'
+    +'<div class="ed-acts">'
+    +'<button class="btn pri" onclick="saveArt('+(isE?a.id:'null')+')">💾 Guardar</button>'
+    +'<button class="btn info" onclick="genAI()">✦ Generar con IA</button>'
+    +'<button class="btn" onclick="'+(isE?"sv('detail')":'sv(\'articles\')')+'" style="margin-left:auto;">Cancelar</button>'
+    +'</div>';
+}
+
+function saveArt(id) {
+  var t=document.getElementById('edt').value.trim();
+  var c=document.getElementById('edb').value.trim();
+  var cat=document.getElementById('edc').value;
+  var aut=document.getElementById('eda').value.trim()||'Anónimo';
+  if(!t||!c){alert('El título y el contenido son obligatorios.');return;}
+  var ex=c.replace(/<[^>]+>/g,'').slice(0,130)+'...';
+  var today=new Date().toISOString().split('T')[0];
+  if(id){
+    var idx=arts.findIndex(function(a){return a.id===id;});
+    if(idx!==-1){arts[idx]={id:id,title:t,content:c,cat:cat,author:aut,excerpt:ex,date:today};sel=arts[idx];}
+    view='detail';
+  } else {
+    var nid=Math.max.apply(null,[0].concat(arts.map(function(a){return a.id;})))+1;
+    var na={id:nid,title:t,content:c,cat:cat,author:aut,excerpt:ex,date:today};
+    arts.unshift(na);sel=na;view='detail';
+  }
+  uc();render();toast('Artículo guardado ✓');
+}
+
+function rStats(mc) {
+  var cats={tech:0,process:0,hr:0,product:0};
+  arts.forEach(function(a){if(cats[a.cat]!==undefined)cats[a.cat]++;});
+  var rec=arts.slice().sort(function(a,b){return b.date.localeCompare(a.date);}).slice(0,3);
+  mc.innerHTML='<div class="stats-grid">'
+    +'<div class="stat"><div class="stat-lbl">Total artículos</div><div class="stat-val">'+arts.length+'</div></div>'
+    +'<div class="stat"><div class="stat-lbl">Tecnología</div><div class="stat-val">'+cats.tech+'</div></div>'
+    +'<div class="stat"><div class="stat-lbl">Procesos</div><div class="stat-val">'+cats.process+'</div></div>'
+    +'<div class="stat"><div class="stat-lbl">RRHH</div><div class="stat-val">'+cats.hr+'</div></div>'
+    +'<div class="stat"><div class="stat-lbl">Producto</div><div class="stat-val">'+cats.product+'</div></div>'
+    +'<div class="stat"><div class="stat-lbl">IA</div><div class="stat-val" style="font-size:20px;">✦ activa</div></div>'
+    +'</div>'
+    +'<p style="font-size:13px;font-weight:500;margin-bottom:10px;">Artículos recientes</p>'
+    +rec.map(function(a){return '<div class="card" onclick="oa('+a.id+')"><div class="ctitle">'+a.title+'</div><div class="cfooter"><span class="tag '+a.cat+'">'+CATS[a.cat]+'</span><span style="margin-left:auto;">◷ '+a.date+'</span></div></div>';}).join('');
+}
+
+function askAbout(id) {
+  var a=arts.find(function(x){return x.id===id;});if(!a)return;
+  document.getElementById('aiinp').value='¿Cuáles son los puntos más importantes del artículo "'+a.title+'"?';
+  sendAI();
+}
+
+function summarize(id) {
+  var a=arts.find(function(x){return x.id===id;});if(!a)return;
+  document.getElementById('aiinp').value='Dame un resumen ejecutivo en 3 puntos del artículo "'+a.title+'".';
+  sendAI();
+}
+
+function genAI() {
+  var t=document.getElementById('edt')?document.getElementById('edt').value.trim():'';
+  var cat=document.getElementById('edc')?document.getElementById('edc').value:'';
+  if(!t){alert('Escribe un título primero para que la IA genere el contenido.');return;}
+  document.getElementById('aiinp').value='Genera el contenido completo para un artículo de base de conocimiento empresarial titulado "'+t+'" en la categoría '+CATS[cat]+'. Devuelve solo el contenido usando etiquetas HTML básicas: h3, p, ul, li, strong.';
+  sendAI();
+}
+
+function addMsg(role, text) {
+  var mc=document.getElementById('aimsg');
+  var now=new Date().toLocaleTimeString('es',{hour:'2-digit',minute:'2-digit'});
+  var d=document.createElement('div');
+  d.className='msg '+(role==='user'?'u':'a');
+  d.innerHTML='<div class="bubble">'+text+'</div><div class="mtime">'+now+'</div>';
+  mc.appendChild(d);mc.scrollTop=mc.scrollHeight;
+  return d;
+}
+
+function addLoading() {
+  var mc=document.getElementById('aimsg');
+  var d=document.createElement('div');d.className='msg a';d.id='ai-ld';
+  d.innerHTML='<div class="bubble"><div class="dots"><span></span><span></span><span></span></div></div>';
+  mc.appendChild(d);mc.scrollTop=mc.scrollHeight;
+}
+
+function rmLoading() {var e=document.getElementById('ai-ld');if(e)e.remove();}
+function aik(e) {if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendAI();}}
+
+async function sendAI() {
+  if(aiLoading)return;
+  var inp=document.getElementById('aiinp');
+  var msg=inp.value.trim();if(!msg)return;
+  inp.value='';aiLoading=true;
+  document.getElementById('aisend').disabled=true;
+  addMsg('user',msg);addLoading();
+
+  var ctx=arts.map(function(a){
+    return 'ARTÍCULO ID:'+a.id+' | "'+a.title+'" ['+CATS[a.cat]+']\n'+a.content.replace(/<[^>]+>/g,'');
+  }).join('\n\n---\n\n');
+
+  var sys='Eres un asistente experto en gestión del conocimiento empresarial. Tienes acceso a esta base de conocimiento:\n\n'+ctx+'\n\nResponde las preguntas del usuario basándote en esta información. Si la pregunta no está relacionada con los artículos, responde con tu conocimiento general e indícalo claramente. Sé conciso, útil y en español. Si es apropiado, usa HTML básico para formatear tu respuesta.';
+
+  try {
+    var resp=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        model:'claude-sonnet-4-20250514',
+        max_tokens:1000,
+        system:sys,
+        messages:[{role:'user',content:msg}]
+      })
+    });
+    var data=await resp.json();
+    rmLoading();
+    if(data.content&&data.content[0]){addMsg('ai',data.content[0].text);}
+    else{addMsg('ai','No pude obtener una respuesta. Intenta nuevamente.');}
+  } catch(e) {
+    rmLoading();
+    addMsg('ai','Error al conectar con la IA. Verifica tu conexión a internet.');
+  }
+  aiLoading=false;
+  document.getElementById('aisend').disabled=false;
+}
+
+uc();render();
+</script>
+</body>
+</html>
